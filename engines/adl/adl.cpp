@@ -245,6 +245,10 @@ void AdlEngine::loadWords(Common::ReadStream &stream, WordMap &map, Common::Stri
 
 		byte synonyms = stream.readByte();
 
+		// WORKAROUND: Missing verb list terminator in hires4 - must check before eos() due to sector boundary
+		if (_gameDescription->gameType == GAME_TYPE_HIRES4 && index == 81 && map.size() == 117)
+		  return;
+
 		if (stream.err() || stream.eos())
 			error("Error reading word list");
 
@@ -257,6 +261,10 @@ void AdlEngine::loadWords(Common::ReadStream &stream, WordMap &map, Common::Stri
 
 		// WORKAROUND: Missing noun list terminator in hires3
 		if (_gameDescription->gameType == GAME_TYPE_HIRES3 && index == 113)
+			return;
+
+		// WORKAROUND: Missing noun list terminator in hisres4
+		if (_gameDescription->gameType == GAME_TYPE_HIRES4 && index == 129 && map.size() == 184)
 			return;
 
 		// WORKAROUND: Missing noun list terminator in hires5 region 15

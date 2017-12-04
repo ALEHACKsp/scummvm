@@ -160,8 +160,8 @@ static const AdlGameDescription gameDescriptions[] = {
 		{
 			"hires4", 0,
 			{
-				{ "ULYSSESA.DSK", 0, "df21f28ae94440f958dbbcfdfaf0c36e", 143360 },
-				{ "ULYSSESB.DSK", 1, "c204e8fe265e9534049f3c0f816cc9fc", 143360 },
+				{ "ULYSSESA.DSK", 0, "db1538ae14166eae90746c549b31f693", 143360 },
+				{ "ULYSSESB.DSK", 1, "8377b4ab7277db449045e5db267b33d0", 143360 },
 				AD_LISTEND
 			},
 			Common::EN_ANY,

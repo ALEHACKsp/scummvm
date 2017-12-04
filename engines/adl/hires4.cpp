@@ -80,10 +80,13 @@ private:
 
 // TODO: It might be worth replacing this with a more generic variant that
 // can be used in both hires4 and hires6
-static Common::MemoryReadStream *readSkewedSectors(DiskImage *disk, byte track, byte sector, byte count) {
+static Common::MemoryReadStream *read16to13Sectors(DiskImage *disk, byte track, byte sector, byte count) {
 	const uint bytesPerSector = disk->getBytesPerSector();
 	const uint sectorsPerTrack = disk->getSectorsPerTrack();
 	const uint bufSize = count * bytesPerSector;
+
+	assert(sectorsPerTrack == 16);
+
 	byte *const buf = (byte *)malloc(bufSize);
 	byte *p = buf;
 
@@ -95,8 +98,8 @@ static Common::MemoryReadStream *readSkewedSectors(DiskImage *disk, byte track, 
 			error("Error loading from disk image");
 
 		p += bytesPerSector;
-		sector += 5;
-		sector %= sectorsPerTrack;
+		sector++;
+		sector %= 13;
 		if (sector == 0)
 			++track;
 	}
@@ -419,6 +422,9 @@ void HiRes4Engine::runIntroLoading(Common::SeekableReadStream &adventure) {
 }
 
 void HiRes4Engine::runIntro() {
+	// Not supported for public image
+	return;
+
 	Common::ScopedPtr<Files_DOS33> files(new Files_DOS33());
 	files->open(getDiskImageName(0));
 
@@ -467,19 +473,19 @@ void HiRes4Engine::init() {
 
 	insertDisk(1);
 
-	StreamPtr stream(readSkewedSectors(_boot, 0x05, 0x6, 1));
+	StreamPtr stream(read16to13Sectors(_boot, 0x09, 0x4, 1));
 	_strings.verbError = readStringAt(*stream, 0x4f);
 	_strings.nounError = readStringAt(*stream, 0x8e);
 	_strings.enterCommand = readStringAt(*stream, 0xbc);
-
-	stream.reset(readSkewedSectors(_boot, 0x05, 0x3, 1));
+	
+	stream.reset(read16to13Sectors(_boot, 0x08, 0xa, 1));
 	stream->skip(0xd7);
 	_strings_v2.time = readString(*stream, 0xff);
 
-	stream.reset(readSkewedSectors(_boot, 0x05, 0x7, 2));
+	stream.reset(read16to13Sectors(_boot, 0x09, 0x1, 2));
 	_strings.lineFeeds = readStringAt(*stream, 0xf8);
 
-	stream.reset(readSkewedSectors(_boot, 0x06, 0xf, 3));
+	stream.reset(read16to13Sectors(_boot, 0x09, 0x9, 3));
 	_strings_v2.saveInsert = readStringAt(*stream, 0x5f);
 	_strings_v2.saveReplace = readStringAt(*stream, 0xe5);
 	_strings_v2.restoreInsert = readStringAt(*stream, 0x132);
@@ -491,50 +497,48 @@ void HiRes4Engine::init() {
 	_messageIds.itemDoesntMove = IDI_HR4_MSG_ITEM_DOESNT_MOVE;
 	_messageIds.itemNotHere = IDI_HR4_MSG_ITEM_NOT_HERE;
 	_messageIds.thanksForPlaying = IDI_HR4_MSG_THANKS_FOR_PLAYING;
-
-	stream.reset(readSkewedSectors(_boot, 0x0a, 0x0, 5));
+	
+	stream.reset(read16to13Sectors(_boot, 0x0e, 0x5, 5));
 	loadMessages(*stream, IDI_HR4_NUM_MESSAGES);
 
-	stream.reset(readSkewedSectors(_boot, 0x05, 0x2, 1));
+	stream.reset(read16to13Sectors(_boot, 0x09, 0x0, 1));
 	stream->skip(0x80);
 	loadPictures(*stream);
 
-	stream.reset(readSkewedSectors(_boot, 0x09, 0x2, 1));
+	stream.reset(read16to13Sectors(_boot, 0x0d, 0xc, 1));
 	stream->skip(0x05);
 	loadItemPictures(*stream, IDI_HR4_NUM_ITEM_PICS);
 
-	stream.reset(readSkewedSectors(_boot, 0x04, 0x0, 3));
+	stream.reset(read16to13Sectors(_boot, 0x07, 0x0, 3));
 	stream->skip(0x15);
 	loadItemDescriptions(*stream, IDI_HR4_NUM_ITEM_DESCS);
 
-	stream.reset(readSkewedSectors(_boot, 0x08, 0x2, 6));
+	stream.reset(read16to13Sectors(_boot, 0x0c, 0x9, 6));
 	stream->skip(0xa5);
 	readCommands(*stream, _roomCommands);
 
-	stream.reset(readSkewedSectors(_boot, 0x04, 0xc, 4));
-	stream.reset(decodeData(*stream, 0x218, 0x318, 0xee));
+	stream.reset(read16to13Sectors(_boot, 0x07, 0xc, 4));
 	readCommands(*stream, _globalCommands);
 
-	stream.reset(readSkewedSectors(_boot, 0x06, 0x6, 1));
+	stream.reset(read16to13Sectors(_boot, 0x0a, 0x7, 1));
 	stream->skip(0x15);
 	loadDroppedItemOffsets(*stream, IDI_HR4_NUM_ITEM_OFFSETS);
-
-	stream.reset(readSkewedSectors(_boot, 0x05, 0x0, 4));
+	
+	stream.reset(read16to13Sectors(_boot, 0x08, 0x3, 4));
 	loadWords(*stream, _verbs, _priVerbs);
 
-	stream.reset(readSkewedSectors(_boot, 0x0b, 0xb, 7));
+	stream.reset(read16to13Sectors(_boot, 0x05, 0x7, 7));
 	loadWords(*stream, _nouns, _priNouns);
 }
 
 void HiRes4Engine::initGameState() {
 	_state.vars.resize(IDI_HR4_NUM_VARS);
 
-	StreamPtr stream(readSkewedSectors(_boot, 0x0b, 0x9, 10));
+	StreamPtr stream(read16to13Sectors(_boot, 0x04, 0xa, 10));
 	stream->skip(0x0e);
 	loadRooms(*stream, IDI_HR4_NUM_ROOMS);
 
-	stream.reset(readSkewedSectors(_boot, 0x0b, 0x0, 13));
-	stream.reset(decodeData(*stream, 0x43, 0x143, 0x91));
+	stream.reset(read16to13Sectors(_boot, 0x04, 0x5, 13));
 	loadItems(*stream);
 }
 
